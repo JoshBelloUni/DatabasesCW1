@@ -54,22 +54,22 @@ WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW vBestSellingGenreAlbum AS"
 ============================================================================
 */
 CREATE VIEW vBestSellingGenreAlbum AS
-SELECT g.Name AS Genre, a.Title AS Album, ar.Name AS Artist, SUM(il.Quantity) AS Sales
+SELECT g.Name AS Genre, al.Title AS Album, ar.Name AS Artist, SUM(il.Quantity) AS Sales
 FROM invoice_items il
 JOIN tracks t ON il.TrackId = t.TrackId
 JOIN albums al ON t.AlbumId = al.AlbumId
-JOIN artists ar ON a.ArtistId = ar.ArtistId
+JOIN artists ar ON al.ArtistId = ar.ArtistId
 JOIN genres g ON t.GenreId = g.GenreId
-GROUP BY g.Name, a.Title
+GROUP BY g.Name, al.Title
 HAVING SUM(il.Quantity) = (
   SELECT MAX(total_sales)
   FROM (
-    SELECT g.Name AS Genre, a.Title AS Album, SUM(il.Quantity) AS total_sales
+    SELECT g.Name AS Genre, al.Title AS Album, SUM(il.Quantity) AS total_sales
     FROM invoice_items il
     JOIN tracks t ON il.TrackId = t.TrackId
-    JOIN albums a ON t.AlbumId = a.AlbumId
+    JOIN albums al ON t.AlbumId = al.AlbumId
     JOIN genres g ON t.GenreId = g.GenreId
-    GROUP BY g.Name, a.Title
+    GROUP BY g.Name, al.Title
   ) AS genre_album_sales
   WHERE g.Name = genre_album_sales.Genre
 )
