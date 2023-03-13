@@ -26,7 +26,6 @@ WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW vCustomerPerEmployee AS"
 ============================================================================
 */
 CREATE VIEW vCustomerPerEmployee  AS
---Remove this line and complete your query for question 1 here
 SELECT employees.LastName, employees.FirstName, employees.EmployeeID, COUNT(customers.CustomerID) AS TotalCustomer
 FROM employees
 LEFT JOIN customers ON employees.EmployeeID = customers.SupportRepId
@@ -39,7 +38,6 @@ WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW v10WorstSellingGenres AS"
 ============================================================================
 */
 CREATE VIEW v10WorstSellingGenres  AS
---Remove this line and complete your query for question 2 here
 SELECT g.Name AS Genre, COALESCE(SUM(ii.Quantity), 0) AS TotalQuantity
 FROM genres g
 LEFT JOIN tracks t ON g.GenreId = t.GenreId
@@ -55,7 +53,6 @@ Complete the query for vBestSellingGenreAlbum
 WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW vBestSellingGenreAlbum AS"
 ============================================================================
 */
---Remove this line and complete your query for question 3 here
 CREATE VIEW vBestSellingGenreAlbum AS
 SELECT g.Name AS Genre, a.Title AS Album, ar.Name AS Artist, SUM(il.Quantity) AS Sales
 FROM invoice_items il
@@ -90,7 +87,6 @@ WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW v10BestSellingArtists AS"
 */
 
 CREATE VIEW v10BestSellingArtists AS
---Remove this line and complete your query for question 4 here
 SELECT ar.Name AS Artist, COUNT(DISTINCT a.AlbumId) AS TotalAlbum, SUM(ii.Quantity) AS TotalTrackSales
 FROM artists ar
 JOIN albums a ON ar.ArtistId = a.ArtistId
@@ -108,45 +104,34 @@ Complete the query for vTopCustomerEachGenre
 WARNNIG: DO NOT REMOVE THE STATEMENT "CREATE VIEW vTopCustomerEachGenre AS" 
 ============================================================================
 */
---Remove this line and complete your query for question 5 here
 CREATE VIEW vTopCustomerEachGenre AS
-SELECT 
-    g.Name AS Genre, 
-    c.FirstName || ' ' || c.LastName AS TopSpender, 
-    SUM(ii.Quantity * ii.UnitPrice) AS TotalSpending
-FROM 
-    genres g
-    JOIN tracks t ON g.GenreId = t.GenreId
-    JOIN invoice_items ii ON t.TrackId = ii.TrackId
-    JOIN invoices i ON ii.InvoiceId = i.InvoiceId
-    JOIN customers c ON i.CustomerId = c.CustomerId
-WHERE 
-    (g.GenreId, TotalSpending) IN (
-        SELECT 
-            g.GenreId, 
-            MAX(GenreTotalSpending.TotalSpending) AS MaxTotalSpending
-        FROM 
-            genres g
-            JOIN tracks t ON g.GenreId = t.GenreId
-            JOIN invoice_items ii ON t.TrackId = ii.TrackId
-            JOIN (
-                SELECT 
-                    i.InvoiceId, 
-                    SUM(ii.Quantity * ii.UnitPrice) AS TotalSpending
-                FROM 
-                    invoices i
-                    JOIN invoice_items ii ON i.InvoiceId = ii.InvoiceId
-                GROUP BY 
-                    i.InvoiceId
-            ) AS GenreTotalSpending ON ii.InvoiceId = GenreTotalSpending.InvoiceId
-        GROUP BY 
-            g.GenreId
-    )
-GROUP BY 
-    g.GenreId, 
-    c.CustomerId;
-
-
+-- selecting the customers first and last names
+-- grouping by the invoice tables to get their total spending per genre
+SELECT g.Name AS Genre,
+       c.FirstName || ' ' || c.LastName AS Customer,
+       SUM(ii.Quantity * ii.UnitPrice) AS TotalSpending
+FROM invoices i
+INNER JOIN customers c ON i.CustomerId = c.CustomerId
+INNER JOIN invoice_items ii ON i.InvoiceId = ii.InvoiceId
+INNER JOIN tracks t ON ii.TrackId = t.TrackId
+INNER JOIN genres g ON t.GenreId = g.GenreId
+GROUP BY g.Name, c.CustomerId
+-- the outer query then selects the highest spender per genre
+HAVING SUM(ii.Quantity * ii.UnitPrice) = (
+    SELECT MAX(TotalSpending) 
+    FROM (
+        -- join back the subquery to create the final table
+        SELECT SUM(ii2.Quantity * ii2.UnitPrice) AS TotalSpending
+        FROM invoices i2
+        INNER JOIN customers c2 ON i2.CustomerId = c2.CustomerId
+        INNER JOIN invoice_items ii2 ON i2.InvoiceId = ii2.InvoiceId
+        INNER JOIN tracks t2 ON ii2.TrackId = t2.TrackId
+        INNER JOIN genres g2 ON t2.GenreId = g2.GenreId
+        WHERE g2.GenreId = g.GenreId
+        GROUP BY c2.CustomerId
+    ) AS genre_spending
+)
+ORDER BY g.Name;
 
 /*
 To view the created views, use SELECT * FROM views;
